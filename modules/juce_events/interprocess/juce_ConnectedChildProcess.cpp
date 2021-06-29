@@ -192,6 +192,10 @@ void ChildProcessCoordinator::killWorkerProcess()
         connection.reset();
     }
 
+    if (childProcess != nullptr) {
+        childProcess->waitForProcessToFinish(100);
+    }
+
     childProcess.reset();
 }
 
