@@ -359,8 +359,19 @@ struct AudioUnitHelpers
     {
         Array<AUChannelInfo> channelInfo;
 
-        auto hasMainInputBus  = (AudioUnitHelpers::getBusCountForWrapper (processor, true)  > 0);
-        auto hasMainOutputBus = (AudioUnitHelpers::getBusCountForWrapper (processor, false) > 0);
+        auto procChInfo = processor.getAUChannelInfo();
+        if (!procChInfo.isEmpty()) {
+            for (auto& pair: procChInfo) {
+                AUChannelInfo info;
+                info.inChannels = pair.first;
+                info.outChannels = pair.second;
+                channelInfo.add (info);
+            }
+            return channelInfo;
+        }
+
+        auto hasMainInputBus  = (AudioUnitHelpers::getBusCount (&processor, true)  > 0);
+        auto hasMainOutputBus = (AudioUnitHelpers::getBusCount (&processor, false) > 0);
 
         if ((! hasMainInputBus) && (! hasMainOutputBus))
         {
