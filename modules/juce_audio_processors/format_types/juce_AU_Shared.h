@@ -334,6 +334,17 @@ struct AudioUnitHelpers
     {
         Array<AUChannelInfo> channelInfo;
 
+        auto procChInfo = processor.getAUChannelInfo();
+        if (!procChInfo.isEmpty()) {
+            for (auto& pair: procChInfo) {
+                AUChannelInfo info;
+                info.inChannels = pair.first;
+                info.outChannels = pair.second;
+                channelInfo.add (info);
+            }
+            return channelInfo;
+        }
+
         auto hasMainInputBus  = (AudioUnitHelpers::getBusCount (&processor, true)  > 0);
         auto hasMainOutputBus = (AudioUnitHelpers::getBusCount (&processor, false) > 0);
 
