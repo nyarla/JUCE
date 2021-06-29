@@ -176,6 +176,10 @@ void ChildProcessMaster::killSlaveProcess()
         connection.reset();
     }
 
+    if (childProcess != nullptr) {
+        childProcess->waitForProcessToFinish(100);
+    }
+
     childProcess.reset();
 }
 
