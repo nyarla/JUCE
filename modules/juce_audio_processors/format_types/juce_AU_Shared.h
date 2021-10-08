@@ -345,8 +345,8 @@ struct AudioUnitHelpers
             return channelInfo;
         }
 
-        auto hasMainInputBus  = (AudioUnitHelpers::getBusCount (&processor, true)  > 0);
-        auto hasMainOutputBus = (AudioUnitHelpers::getBusCount (&processor, false) > 0);
+        auto hasMainInputBus  = (AudioUnitHelpers::getBusCount (processor, true)  > 0);
+        auto hasMainOutputBus = (AudioUnitHelpers::getBusCount (processor, false) > 0);
 
         if ((! hasMainInputBus) && (! hasMainOutputBus))
         {
