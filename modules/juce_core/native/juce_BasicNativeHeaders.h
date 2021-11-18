@@ -51,6 +51,7 @@
  #endif
 
  #include <sys/socket.h>
+ #include <sys/un.h>
  #include <sys/sysctl.h>
  #include <sys/stat.h>
  #include <sys/param.h>
@@ -109,6 +110,7 @@
  #include <wininet.h>
  #include <nb30.h>
  #include <winsock2.h>
+ #include <afunix.h>
  #include <ws2tcpip.h>
  #include <iphlpapi.h>
  #include <accctrl.h>
