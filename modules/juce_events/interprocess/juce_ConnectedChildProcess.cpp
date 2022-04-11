@@ -139,7 +139,7 @@ bool ChildProcessMaster::sendMessageToSlave (const MemoryBlock& mb)
 }
 
 bool ChildProcessMaster::launchSlaveProcess (const File& executable, const String& commandLineUniqueID,
-                                             int timeoutMs, int streamFlags)
+                                             const StringArray& customArgs, int timeoutMs, int streamFlags)
 {
     killSlaveProcess();
 
@@ -148,6 +148,7 @@ bool ChildProcessMaster::launchSlaveProcess (const File& executable, const Strin
     StringArray args;
     args.add (executable.getFullPathName());
     args.add (getCommandLinePrefix (commandLineUniqueID) + pipeName);
+    args.addArray(customArgs);
 
     childProcess.reset (new ChildProcess());
 

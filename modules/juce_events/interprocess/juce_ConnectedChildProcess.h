@@ -163,6 +163,7 @@ public:
     */
     bool launchSlaveProcess (const File& executableToLaunch,
                              const String& commandLineUniqueID,
+                             const StringArray& customArgs,
                              int timeoutMs = 0,
                              int streamFlags = ChildProcess::wantStdOut | ChildProcess::wantStdErr);
 
