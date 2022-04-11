@@ -150,8 +150,8 @@ bool ChildProcessCoordinator::sendMessageToWorker (const MemoryBlock& mb)
     return false;
 }
 
-bool ChildProcessMaster::launchSlaveProcess (const File& executable, const String& commandLineUniqueID,
-                                             const StringArray& customArgs, int timeoutMs, int streamFlags)
+bool ChildProcessMaster::launchWorkerProcess (const File& executable, const String& commandLineUniqueID,
+                                              const StringArray& customArgs, int timeoutMs, int streamFlags)
 {
     killWorkerProcess();
 
