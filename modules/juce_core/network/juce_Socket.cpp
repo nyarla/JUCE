@@ -837,6 +837,7 @@ bool StreamingSocket::createListener (const File& path)
     if (connected)
         close();
 
+    domainFile = path;
     isListener = true;
 
     handle = (int) socket (AF_UNIX, SOCK_STREAM, 0);
@@ -844,9 +845,10 @@ bool StreamingSocket::createListener (const File& path)
     if (handle < 0)
         return false;
 
-    if (SocketHelpers::bindSocket ((SocketHandle) handle.load(), path)
+    if (SocketHelpers::bindSocket ((SocketHandle) handle.load(), domainFile)
          && listen ((SocketHandle) handle.load(), SOMAXCONN) >= 0)
     {
+
         connected = true;
         return true;
     }
