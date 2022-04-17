@@ -265,15 +265,47 @@ namespace SocketHelpers
         return -1;
     }
 
+    static String getAddressString(struct in_addr addr) noexcept
+    {
+        char saddr[INET_ADDRSTRLEN];
+
+        if (nullptr != inet_ntop(AF_INET, &addr, saddr, INET_ADDRSTRLEN)) {
+            return saddr;
+        }
+
+        return "0.0.0.0";
+    }
+
+    static String getAddressString(struct in6_addr addr) noexcept
+    {
+        char saddr[INET6_ADDRSTRLEN];
+
+        if (nullptr != inet_ntop(AF_INET6, &addr, saddr, INET6_ADDRSTRLEN))
+            return saddr;
+
+        return "::";
+    }
+
     static String getConnectedAddress (SocketHandle handle) noexcept
     {
         struct sockaddr_in addr;
         socklen_t len = sizeof (addr);
 
         if (getpeername (handle, (struct sockaddr*) &addr, &len) >= 0)
-            return inet_ntoa (addr.sin_addr);
+            return getAddressString (addr.sin_addr);
 
         return "0.0.0.0";
+    }
+
+    static String getConnectedAddress6 (SocketHandle handle) noexcept
+    {
+        struct sockaddr_in6 addr;
+        socklen_t len = sizeof (addr);
+
+        if (getpeername (handle, (struct sockaddr*) &addr, &len) >= 0)
+            return getAddressString (addr.sin6_addr);
+
+        return "::";
     }
 
     static bool setSocketBlockingState (SocketHandle handle, bool shouldBlock) noexcept
@@ -336,13 +368,20 @@ namespace SocketHelpers
                     }
                     else
                     {
-                        sockaddr_in client;
-                        socklen_t clientLen = sizeof (sockaddr);
+                        struct sockaddr_storage client;
+                        socklen_t clientLen = sizeof (client);
 
-                        bytesThisTime = ::recvfrom (handle, buffer, numToRead, 0, (sockaddr*) &client, &clientLen);
+                        bytesThisTime = ::recvfrom (handle, buffer, numToRead, 0, (struct sockaddr*) &client, &clientLen);
 
-                        *senderIP = String::fromUTF8 (inet_ntoa (client.sin_addr), 16);
-                        *senderPort = ntohs (client.sin_port);
+                        if (client.ss_family == AF_INET) {
+                            auto* addr = (struct sockaddr_in*)&client;
+                            *senderIP = getAddressString (addr->sin_addr);
+                            *senderPort = ntohs (addr->sin_port);
+                        } else {
+                            auto* addr = (struct sockaddr_in6*)&client;
+                            *senderIP = getAddressString (addr->sin6_addr);
+                            *senderPort = ntohs (addr->sin6_port);
+                        }
                     }
                 }
             }
@@ -864,9 +903,12 @@ StreamingSocket* StreamingSocket::waitForNextConnection() const
         juce_socklen_t len = sizeof (address);
         auto newSocket = (int) accept ((SocketHandle) handle.load(), (struct sockaddr*) &address, &len);
 
-        if (newSocket >= 0 && connected)
-            return new StreamingSocket (inet_ntoa (((struct sockaddr_in*) &address)->sin_addr),
-                                        portNumber, newSocket);
+        if (newSocket >= 0 && connected) {
+            String saddr = address.ss_family == AF_INET
+                               ? SocketHelpers::getAddressString(((struct sockaddr_in*)&address)->sin_addr)
+                               : SocketHelpers::getAddressString(((struct sockaddr_in6*)&address)->sin6_addr);
+            return new StreamingSocket (saddr, portNumber, newSocket);
+        }
     }
 
     return nullptr;
@@ -881,9 +923,10 @@ bool StreamingSocket::isLocal() const noexcept
         return true;
 
     IPAddress currentIP (SocketHelpers::getConnectedAddress ((SocketHandle) handle.load()));
+    IPAddress currentIPv6 (SocketHelpers::getConnectedAddress6 ((SocketHandle) handle.load()));
 
     for (auto& a : IPAddress::getAllAddresses())
-        if (a == currentIP)
+        if (a == currentIP || a == currentIPv6)
             return true;
 
     return hostName == "127.0.0.1";
