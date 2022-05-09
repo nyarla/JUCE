@@ -87,12 +87,12 @@ private:
 struct ChildProcessCoordinator::Connection  : public InterprocessConnection,
                                               private ChildProcessPingThread
 {
-    Connection (ChildProcessCoordinator& m, const String& pipeName, int timeout)
+    Connection (ChildProcessCoordinator& m, const String& pipeName, int readTimeout, int pingTimeout)
         : InterprocessConnection (false, magicCoordWorkerConnectionHeader),
-          ChildProcessPingThread (timeout),
+          ChildProcessPingThread (pingTimeout),
           owner (m)
     {
-        createPipe (pipeName, timeoutMs);
+        createPipe (pipeName, readTimeout);
     }
 
     ~Connection() override
@@ -151,8 +151,8 @@ bool ChildProcessCoordinator::sendMessageToWorker (const MemoryBlock& mb)
 }
 
 bool ChildProcessMaster::launchWorkerProcess (const File& executable, const String& commandLineUniqueID,
-                                              const StringArray& customArgs, int timeoutMs, int streamFlags)
-{
+                                              const StringArray& customArgs, int readTimeoutMs, int pingTimeoutMs,
+                                              int streamFlags) {
     killWorkerProcess();
 
     auto pipeName = "p" + String::toHexString (Random().nextInt64());
@@ -166,7 +166,8 @@ bool ChildProcessMaster::launchWorkerProcess (const File& executable, const Stri
 
     if (childProcess->start (args, streamFlags))
     {
-        connection.reset (new Connection (*this, pipeName, timeoutMs <= 0 ? defaultTimeoutMs : timeoutMs));
+        connection.reset (new Connection (*this, pipeName, readTimeoutMs <= 0 ? defaultTimeoutMs : readTimeoutMs,
+                                          pingTimeoutMs <= 0 ? defaultTimeoutMs : pingTimeoutMs));
 
         if (connection->isConnected())
         {
