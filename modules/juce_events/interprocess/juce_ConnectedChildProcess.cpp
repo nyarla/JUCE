@@ -2,7 +2,7 @@
   ==============================================================================
 
    This file is part of the JUCE library.
-   Copyright (c) 2020 - Raw Material Software Limited
+   Copyright (c) 2022 - Raw Material Software Limited
 
    JUCE is an open source library subject to commercial or open-source
    licensing.
@@ -61,6 +61,8 @@ struct ChildProcessPingThread  : public Thread,
 
     int timeoutMs;
 
+    using AsyncUpdater::cancelPendingUpdate;
+
 private:
     Atomic<int> countdown;
 
@@ -97,6 +99,7 @@ struct ChildProcessCoordinator::Connection  : public InterprocessConnection,
 
     ~Connection() override
     {
+        cancelPendingUpdate();
         stopThread (10000);
     }
 
@@ -150,9 +153,10 @@ bool ChildProcessCoordinator::sendMessageToWorker (const MemoryBlock& mb)
     return false;
 }
 
-bool ChildProcessMaster::launchWorkerProcess (const File& executable, const String& commandLineUniqueID,
-                                              const StringArray& customArgs, int readTimeoutMs, int pingTimeoutMs,
-                                              int streamFlags) {
+bool ChildProcessCoordinator::launchWorkerProcess (const File& executable, const String& commandLineUniqueID,
+                                                   const StringArray& customArgs, int readTimeoutMs, int pingTimeoutMs,
+                                                   int streamFlags)
+{
     killWorkerProcess();
 
     auto pipeName = "p" + String::toHexString (Random().nextInt64());
@@ -171,8 +175,8 @@ bool ChildProcessMaster::launchWorkerProcess (const File& executable, const Stri
 
         if (connection->isConnected())
         {
-            sendMessageToWorker ({ startMessage, specialMessageSize });
             connection->startPinging();
+            sendMessageToWorker ({ startMessage, specialMessageSize });
             return true;
         }
 
@@ -191,6 +195,7 @@ void ChildProcessCoordinator::killWorkerProcess()
         connection.reset();
     }
 
+    // Avoid zombies!
     if (childProcess != nullptr) {
         childProcess->waitForProcessToFinish(100);
     }
@@ -212,6 +217,7 @@ struct ChildProcessWorker::Connection  : public InterprocessConnection,
 
     ~Connection() override
     {
+        cancelPendingUpdate();
         stopThread (10000);
         disconnect();
     }
